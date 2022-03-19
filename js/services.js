@@ -2,7 +2,19 @@
  * App Services. This contains the logic of the application organised in modules/objects. *
  ***********************************************************************************/
 
+let fixtures=[];
+
 myApp.services = {
+
+  localSto: function(){
+    let lTask=localStorage.getItem('tasks');
+    if(lTask!=null){
+      let contenu = JSON.parse(lTask);
+      contenu.forEach(task=>{
+        myApp.services.tasks.create(task);
+      })
+    }
+  },
 
   /////////////////
   // Task Service //
@@ -68,6 +80,8 @@ myApp.services = {
       // Insert urgent tasks at the top and non urgent tasks at the bottom.
       var pendingList = document.querySelector('#pending-list');
       pendingList.insertBefore(taskItem, taskItem.data.urgent ? pendingList.firstChild : null);
+      fixtures.push(data);
+      localStorage.setItem("tasks", JSON.stringify(fixtures))
     },
 
     // Modifies the inner data and current view of an existing task.
@@ -91,7 +105,13 @@ myApp.services = {
       taskItem.classList[data.highlight ? 'add' : 'remove']('highlight');
 
       // Store the new data within the element.
+      let ancienneTask=taskItem.data;
       taskItem.data = data;
+
+      //maj index
+      let i = fixtures.findIndex(task => ancienneTask === task )
+      fixtures[i] = taskItem.data
+      localStorage.setItem("tasks", JSON.stringify(fixtures))
     },
 
     // Deletes a task item and its listeners.
@@ -104,6 +124,9 @@ myApp.services = {
         // Check if the category has no items and remove it in that case.
         myApp.services.categories.updateRemove(taskItem.data.category);
       });
+      let i = fixtures.findIndex(task => taskItem.data === task )
+      fixtures.splice(i, 1)
+      localStorage.setItem("tasks", JSON.stringify(fixtures))
     }
   },
 
@@ -221,6 +244,7 @@ myApp.services = {
   ////////////////////////
   // Initial Data Service //
   ////////////////////////
+  /*
   fixtures: [
     {
       title: 'Download OnsenUI',
@@ -278,5 +302,5 @@ myApp.services = {
       highlight: false,
       urgent: false
     }
-  ]
+  ]*/
 };
