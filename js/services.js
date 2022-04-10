@@ -11,7 +11,7 @@ myApp.services = {
     if(lTask!=null){
       let contenu = JSON.parse(lTask);
       contenu.forEach(task=>{
-        myApp.services.tasks.create(task);
+        myApp.services.tasks.create(task.data);
       })
     }
   },
@@ -44,7 +44,15 @@ myApp.services = {
       // Add 'completion' functionality when the checkbox changes.
       taskItem.data.onCheckboxChange = function(event) {
         myApp.services.animators.swipe(taskItem, function() {
-          var listId = (taskItem.parentElement.id === 'pending-list' && event.target.checked) ? '#completed-list' : '#pending-list';
+          let listId;
+          if (taskItem.parentElement.id === 'pending-list' && event.target.checked) {
+            listId = '#progress-list'
+            event.target.checked = !event.target.checked
+          } else if (taskItem.parentElement.id === 'progress-list' && event.target.checked) {
+            listId = '#completed-list'
+          } else {
+            listId = '#pending-list'
+          }
           document.querySelector(listId).appendChild(taskItem);
         });
       };
@@ -80,7 +88,7 @@ myApp.services = {
       // Insert urgent tasks at the top and non urgent tasks at the bottom.
       var pendingList = document.querySelector('#pending-list');
       pendingList.insertBefore(taskItem, taskItem.data.urgent ? pendingList.firstChild : null);
-      fixtures.push(data);
+      fixtures.push(taskItem);
       localStorage.setItem("tasks", JSON.stringify(fixtures))
     },
 
@@ -105,12 +113,12 @@ myApp.services = {
       taskItem.classList[data.highlight ? 'add' : 'remove']('highlight');
 
       // Store the new data within the element.
-      let ancienneTask=taskItem.data;
+      let ancienneTask=taskItem;
       taskItem.data = data;
 
       //maj index
       let i = fixtures.findIndex(task => ancienneTask === task )
-      fixtures[i] = taskItem.data
+      fixtures[i] = taskItem
       localStorage.setItem("tasks", JSON.stringify(fixtures))
     },
 
@@ -124,10 +132,34 @@ myApp.services = {
         // Check if the category has no items and remove it in that case.
         myApp.services.categories.updateRemove(taskItem.data.category);
       });
-      let i = fixtures.findIndex(task => taskItem.data === task )
+      let i = fixtures.findIndex(task => taskItem === task )
       fixtures.splice(i, 1)
       localStorage.setItem("tasks", JSON.stringify(fixtures))
-    }
+    },
+
+    //clear all the tasks
+    clearAll: function(){
+      ons.notification.confirm({
+        message: 'Are you sure you want to clear all the tasks ?',
+        buttonLabels: ['Clear All', 'Cancel'],
+        cancelable: true,
+        callback: function(answer) {
+          if(answer==0){
+            for (let fix of fixtures) {
+              fix.removeEventListener('change', fix.data.onCheckboxChange);
+              myApp.services.animators.remove(fix, function () {
+                fix.remove();
+                // remove la categorie si elle ne contient aucune tache
+                myApp.services.categories.updateRemove(fix.data.category);
+              });
+            }
+            fixtures = [];
+            localStorage.setItem("tasks", JSON.stringify(fixtures));
+          }
+        }
+      });
+    },
+
   },
 
   /////////////////////
@@ -219,7 +251,7 @@ myApp.services = {
 
     // Swipe animation for task completion.
     swipe: function(listItem, callback) {
-      var animation = (listItem.parentElement.id === 'pending-list') ? 'animation-swipe-right' : 'animation-swipe-left';
+      var animation = (listItem.parentElement.id === 'pending-list' || listItem.parentElement.id ==='progress_list') ? 'animation-swipe-right' : 'animation-swipe-left';
       listItem.classList.add('hide-children');
       listItem.classList.add(animation);
 

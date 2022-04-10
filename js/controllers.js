@@ -42,27 +42,52 @@ myApp.controllers = {
   // New Task Page Controller //
   ////////////////////////////
   newTaskPage: function(page) {
+    let tasks = JSON.parse(localStorage.getItem("tasks"))
+    let categorys = []
+    for (let task of tasks) {
+      if(!categorys.includes(task.data.category)){
+        categorys.push(task.data.category)
+        let item = document.createElement('option')
+        item.innerHTML = task.data.category
+        page.querySelector('#category-select').appendChild(item)
+      }
+    }
     // Set button functionality to save a new task.
     Array.prototype.forEach.call(page.querySelectorAll('[component="button/save-task"]'), function(element) {
       element.onclick = function() {
         var newTitle = page.querySelector('#title-input').value;
+        let category = null
 
         if (newTitle) {
-          // If input title is not empty, create a new task.
-          myApp.services.tasks.create(
-            {
-              title: newTitle,
-              category: page.querySelector('#category-input').value,
-              description: page.querySelector('#description-input').value,
-              highlight: page.querySelector('#highlight-input').checked,
-              urgent: page.querySelector('#urgent-input').checked
-            }
-          );
+          if(page.querySelector('#category-input').value === "" &&
+              page.querySelector('#category-select').value === "Select a category"){
+            category="";
+          } else if(page.querySelector('#category-input').value !== "" &&
+              page.querySelector('#category-select').value !== "Select a category"){
+            ons.notification.alert('Write or chose a category');
+          } else if(page.querySelector('#category-input').value !== "" &&
+              page.querySelector('#category-select').value === "Select a category"){
+            category = page.querySelector('#category-input').value;
+          } else {
+            category = page.querySelector('#category-select').value;
+          }
+          // If it's ok for the category create the task.
+          if(category !== null) {
+            myApp.services.tasks.create(
+                {
+                  title: newTitle,
+                  category: category,
+                  description: page.querySelector('#description-input').value,
+                  highlight: page.querySelector('#highlight-input').checked,
+                  urgent: page.querySelector('#urgent-input').checked,
+                }
+            );
 
-          // Set selected category to 'All', refresh and pop page.
-          document.querySelector('#default-category-list ons-list-item ons-radio').checked = true;
-          document.querySelector('#default-category-list ons-list-item').updateCategoryView();
-          document.querySelector('#myNavigator').popPage();
+            // Set selected category to 'All', refresh and pop page.
+            document.querySelector('#default-category-list ons-list-item ons-radio').checked = true;
+            document.querySelector('#default-category-list ons-list-item').updateCategoryView();
+            document.querySelector('#myNavigator').popPage();
+          }
 
         } else {
           // Show alert if the input title is empty.
